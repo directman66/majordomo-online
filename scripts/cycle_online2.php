@@ -9,15 +9,10 @@ $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 include_once("./load_settings.php");
 include_once(DIR_MODULES . "control_modules/control_modules.class.php");
 $ctl = new control_modules();
-include_once(DIR_MODULES . 'livegpstracks/livegpstracks.class.php');
-$livegpstracks_module = new livegpstracks();
-$livegpstracks_module->getConfig();
-// In data
-//$tmp1 = SQLSelectOne("SELECT ID FROM lgps_out LIMIT 1");
-// Out data
-//$tmp2 = SQLSelectOne("SELECT ID FROM lgps_in LIMIT 1");
-//if ((!$tmp1['ID']) && (!$tmp2['ID']))
-//   exit; // no devices added -- no need to run this cycle
+include_once(DIR_MODULES . 'online2/online2.class.php');
+$online2_module = new online2();
+$online2_module->getConfig();
+
  
 echo date("H:i:s") . " running " . basename(__FILE__) . PHP_EOL;
 $latest_check=0;
@@ -28,7 +23,7 @@ while (1)
    if ((time()-$latest_check)>$checkEvery) {
     $latest_check=time();
     //echo date('Y-m-d H:i:s').' Polling devices...\n';
-    $livegpstracks_module->processCycle();
+    $online2_module->processCycle();
    }
    if (file_exists('./reboot') || IsSet($_GET['onetime'])){
       $db->Disconnect();
