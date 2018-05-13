@@ -1,5 +1,8 @@
 <?php
 /**
+* https://yandex.ru/pogoda/
+* author Sannikov Dmitriy sannikovdi@yandex.ru
+* support page 
 * @package project
 * @author Wizard <sergejey@gmail.com>
 * @copyright http://majordomo.smartliving.ru/ (c)
@@ -16,7 +19,7 @@ class online extends module {
 */
 function online() {
   $this->name="online";
-  $this->title="majordomo-online";
+  $this->title="Модуль онлайн";
   $this->module_category="<#LANG_SECTION_APPLICATIONS#>";
   $this->checkInstalled();
 }
@@ -27,6 +30,10 @@ function online() {
 *
 * @access public
 */
+ function edit_classes(&$out, $id) {
+  require(DIR_MODULES.$this->name.'/classes_edit.inc.php');
+ }
+
 function saveParams($data=0) {
  $p=array();
  if (IsSet($this->id)) {
@@ -43,6 +50,9 @@ function saveParams($data=0) {
  }
  return parent::saveParams($p);
 }
+
+
+
 /**
 * getParams
 *
@@ -111,18 +121,19 @@ function run() {
 */
 function admin(&$out) {
  $this->getConfig();
-//        if ((time() - gg('cycle_online2Run')) < $this->config['ONLINE2_TIMEOUT']*2 ) {
+
+//        if ((time() - gg('cycle_livegpstracksRun')) < $this->config['TLG_TIMEOUT']*2 ) {
         if ((time() - gg('cycle_onlineRun')) < 360*2 ) {
 			$out['CYCLERUN'] = 1;
 		} else {
 			$out['CYCLERUN'] = 0;
 		}
+
  
- $out['UUID'] = $this->config['UUID'];
- $out['SRV_NAME']=$this->config['SRV_NAME'];
- $out['API_MAC']=$this->config['API_MAC'];
- $out['API_SERVER']=$this->config['API_SERVER'];
- $out['API_PORT']=$this->config['API_PORT'];
+ $out['DUUID'] = $this->config['DUUID'];
+ $out['DEVICEID']=$this->config['DEVICEID'];
+
+	
  $out['EVERY']=$this->config['EVERY'];
  
  if (!$out['UUID']) {
@@ -132,16 +143,12 @@ function admin(&$out) {
  }
  
  if ($this->view_mode=='update_settings') {
-	global $srv_name;
-	$this->config['SRV_NAME']=$srv_name;	 
-	global $api_server;
-	$this->config['API_SERVER']=$api_server;	 
-	global $api_port;
-	$this->config['API_PORT']=$api_port;	 
-	global $api_mac;
-	$this->config['API_MAC']=$api_mac;
-	global $every;
-	$this->config['EVERY']=$every;
+	global $duuid;
+	$this->config['DUUID']=$duuid;	 
+
+	global $deviceid;
+	$this->config['DEVICEID']=$deviceid;	 
+
    
    $this->saveConfig();
    $this->redirect("?");
@@ -150,32 +157,40 @@ function admin(&$out) {
   $out['SET_DATASOURCE']=1;
  }
  
- //if ($this->tab=='' || $this->tab=='outdata') {
-if ($this->tab=='outdata') {
-   $this->outdata_search($out);
- }  
- //if ($this->tab=='indata') {
-if ($this->tab=='' || $this->tab=='indata') {	
-   $this->indata_search($out); 
+// if ($this->tab=='' || $this->tab=='outdata') {
+//   $this->outdata_search($out);
+// }  
+
+ if ($this->tab=='' || $this->tab=='indata') {
+    $this->indata_search($out); 
  }
- if ($this->view_mode=='test') {
-setGlobal('cycle_livegpstracksControl','start'); 	 
-		$this->readData();
+
+ if ($this->view_mode=='config_edit') {
+   $this->config_edit($out, $this->id);
  }
- if ($this->view_mode=='outdata_edit') {
-   $this->outdata_edit($out, $this->id);
+
+ if ($this->view_mode=='config_check') {
+echo "echeck";
+   $this->config_check($this->id);
  }
- if ($this->view_mode=='outdata_del') {
-   $this->outdata_del($this->id);
-   $this->redirect("?data_source=$this->data_source&view_mode=node_edit&id=$pid&tab=outdata");
- }	
- if ($this->view_mode=='indata_edit') {
-   $this->indata_edit($out, $this->id);
+
+ if ($this->view_mode=='config_uncheck') {
+   $this->config_uncheck($this->id);
  }
- if ($this->view_mode=='indata_del') {
-   $this->indata_del($this->id);
-   $this->redirect("?data_source=$this->data_source&view_mode=node_edit&id=$pid&tab=indata");
- }	
+
+if ($this->view_mode=='config_mycity') {
+   $this->config_mycity($this->id);
+ }
+	
+
+
+
+ if ($this->view_mode=='get') {
+setGlobal('cycle_onlineControl','start'); 
+		$this->getdatefnc();
+ }
+
+
 }
 /**
 * FrontEnd
@@ -187,91 +202,98 @@ setGlobal('cycle_livegpstracksControl','start');
 function usual(&$out) {
  $this->admin($out);
 }
-/**
-* OutData search
-*
-* @access public
-*/
- function outdata_search(&$out) {	 
-  require(DIR_MODULES.$this->name.'/outdata.inc.php');
- }
-/**
-* InData search
-*
-* @access public
-*/ 
+ 
  function indata_search(&$out) {	 
   require(DIR_MODULES.$this->name.'/indata.inc.php');
+  require(DIR_MODULES.$this->name.'/cfgdata.inc.php');
  }
-/**
-* OutData edit/add
-*
-* @access public
-*/
- function outdata_edit(&$out, $id) {	
-  require(DIR_MODULES.$this->name.'/outdata_edit.inc.php');
- } 
-/**
-* OutData delete record
-*
-* @access public
-*/
- function outdata_del($id) {
-  $rec=SQLSelectOne("SELECT * FROM lgps_out WHERE ID='$id'");
-  // some action for related tables
-  SQLExec("DELETE FROM lgps_out WHERE ID='".$rec['ID']."'");
- }
+
+
+
+ function processCycle() {
+   $this->getConfig();
+
+   $every=$this->config['EVERY'];
+   $tdev = time()-$this->config['LATEST_UPDATE'];
+   $has = $tdev>$every*60;
+   if ($tdev < 0) {
+		$has = true;
+   }
+   
+   if ($has) {  
+$this->getdatefnc();   
+		 
+	$this->config['LATEST_UPDATE']=time();
+	$this->saveConfig();
+   } 
+  }
 /**
 * InData edit/add
 *
 * @access public
 */
- function indata_edit(&$out, $id) {	
-  require(DIR_MODULES.$this->name.'/indata_edit.inc.php');
+ 
+ function config_edit(&$out, $id) {	
+  require(DIR_MODULES.$this->name.'/config_edit.inc.php');
  } 
 /**
 * InData delete record
 *
 * @access public
 */
- function indata_del($id) {
-  $rec=SQLSelectOne("SELECT * FROM lgps_in WHERE ID='$id'");
+ function config_del($id) {
+  $rec=SQLSelectOne("SELECT * FROM yaweather_cities WHERE ID='$id'");
   // some action for related tables
-  SQLExec("DELETE FROM lgps_in WHERE ID='".$rec['ID']."'");
+  SQLExec("DELETE FROM yaweather_cities WHERE ID='".$rec['ID']."'");
  }
+/**
+* InData delete record
+*
+* @access public
+*/
+ function config_check($id) {
+  $rec=SQLSelectOne("SELECT * FROM yaweather_cities WHERE ID=".$id);
+//echo "<br>". implode( $id);
+   $rec['check']=1;
+SQLUpdate('yaweather_cities',$rec); 
+} 
+
+
+/**
+* InData delete record
+*
+* @access public
+*/
  
- function propertySetHandle($object, $property, $value) {
-   $this->getConfig();
-   $table='lgps_out';
-   $properties=SQLSelect("SELECT ID FROM $table WHERE LINKED_OBJECT LIKE '".DBSafe($object)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."'");
-   $total=count($properties);
-   if ($total) {
-    for($i=0;$i<$total;$i++) {
-     //to-do
-    }
-   }
- }
- function processCycle() {
-   $this->getConfig();
-   $every=$this->config['EVERY'];
-   $tdev = time()-$this->config['LATEST_UPDATE'];
-   $has = $tdev>$every*60;
-//   if ($tdev < 0) {
-		$has = true;
-//   }
-   
-   if ($has) {     
-	$this->readData();
-		 
-	$this->config['LATEST_UPDATE']=time();
-	$this->saveConfig();
-   } 
- }
+ function config_uncheck($id) {
+  $rec=SQLSelectOne("SELECT * FROM yaweather_cities WHERE ID=".$id);
+   $rec['check']=0;
+SQLUpdate('yaweather_cities',$rec); 
+} 
+	
+ function config_mycity($id) {
+$rec=SQLSelectOne("update yaweather_cities set mycity=0");
+SQLExec($rec);
+	 
+$rec=SQLSelectOne("update yaweather_cities set mycity=1 WHERE ID=".$id );
+SQLExec($rec);
+
+	 
+} 	
+	
  
  
- 	
- 
-   
+///////////////////////////////////
+
+function  getdatefnc(){
+	
+	
+//////////	
+}
+
+  
+  
+  
  
 /**
 * Install
@@ -291,8 +313,7 @@ function usual(&$out) {
 * @access public
 */
  function uninstall() {
-  SQLExec('DROP TABLE IF EXISTS online2');
-  
+  SQLExec('DROP TABLE IF EXISTS yaweather_cities');
   parent::uninstall();
  }
 /**
@@ -303,9 +324,6 @@ function usual(&$out) {
 * @access private
 */
  function dbInstall($data) {
-/*
-nm_outdata - 
-*/
 addClass('online'); 
   
   $data = <<<EOD
@@ -330,10 +348,12 @@ online: CHECK_LATEST datetime
 EOD;
   parent::dbInstall($data);
 setGlobal('cycle_onlineAutoRestart','1');	 
-	 
+	 		
  }
 // --------------------------------------------------------------------
-//////
+
+}//////
+
 /*
 *
 * TW9kdWxlIGNyZWF0ZWQgQXByIDA0LCAyMDE2IHVzaW5nIFNlcmdlIEouIHdpemFyZCAoQWN0aXZlVW5pdCBJbmMgd3d3LmFjdGl2ZXVuaXQuY29tKQ==
