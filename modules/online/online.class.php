@@ -14,7 +14,7 @@ class online extends module {
 *
 * @access private
 */
-function livegpstracks() {
+function online() {
   $this->name="online";
   $this->title="majordomo-online";
   $this->module_category="<#LANG_SECTION_APPLICATIONS#>";
