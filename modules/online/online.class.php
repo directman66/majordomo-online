@@ -1,6 +1,5 @@
 <?php
 /**
-* https://livegpstracks.com/
 * @package project
 * @author Wizard <sergejey@gmail.com>
 * @copyright http://majordomo.smartliving.ru/ (c)
@@ -8,7 +7,7 @@
 */
 //
 //
-class online2 extends module {
+class online extends module {
 /**
 *
 * Module class constructor
@@ -16,8 +15,8 @@ class online2 extends module {
 * @access private
 */
 function livegpstracks() {
-  $this->name="online2";
-  $this->title="majordomo-online2";
+  $this->name="online";
+  $this->title="majordomo-online";
   $this->module_category="<#LANG_SECTION_APPLICATIONS#>";
   $this->checkInstalled();
 }
@@ -113,7 +112,7 @@ function run() {
 function admin(&$out) {
  $this->getConfig();
 //        if ((time() - gg('cycle_online2Run')) < $this->config['ONLINE2_TIMEOUT']*2 ) {
-        if ((time() - gg('cycle_online2Run')) < 360*2 ) {
+        if ((time() - gg('cycle_onlineRun')) < 360*2 ) {
 			$out['CYCLERUN'] = 1;
 		} else {
 			$out['CYCLERUN'] = 0;
@@ -310,27 +309,27 @@ nm_outdata -
 addClass('online'); 
   
   $data = <<<EOD
-online2: IPADDR varchar(100)
-online2: HOSTNAME varchar(100) 
-online2: RESULT int(30)
-online2: SEARCH_WORD varchar(255) NOT NULL DEFAULT ''
-online2: CHECK_LATEST datetime
- online2: CHECK_NEXT datetime
- online2: SCRIPT_ID_ONLINE int(10) NOT NULL DEFAULT '0'
- online2: CODE_ONLINE text
- online2: SCRIPT_ID_OFFLINE int(10) NOT NULL DEFAULT '0'
- online2: CODE_OFFLINE text
- online2: OFFLINE_INTERVAL int(10) NOT NULL DEFAULT '0'
- online2: ONLINE_INTERVAL int(10) NOT NULL DEFAULT '0'
- online2: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
- online2: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
- online2: COUNTER_CURRENT int(10) NOT NULL DEFAULT '0'
- online2: COUNTER_REQUIRED int(10) NOT NULL DEFAULT '0'
- online2: STATUS_EXPECTED int(3) NOT NULL DEFAULT '0'
- online2: LOG text
+online: IPADDR varchar(100)
+online: HOSTNAME varchar(100) 
+online: RESULT int(30)
+online: SEARCH_WORD varchar(255) NOT NULL DEFAULT ''
+online: CHECK_LATEST datetime
+ online: CHECK_NEXT datetime
+ online: SCRIPT_ID_ONLINE int(10) NOT NULL DEFAULT '0'
+ online: CODE_ONLINE text
+ online: SCRIPT_ID_OFFLINE int(10) NOT NULL DEFAULT '0'
+ online: CODE_OFFLINE text
+ online: OFFLINE_INTERVAL int(10) NOT NULL DEFAULT '0'
+ online: ONLINE_INTERVAL int(10) NOT NULL DEFAULT '0'
+ online: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
+ online: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
+ online: COUNTER_CURRENT int(10) NOT NULL DEFAULT '0'
+ online: COUNTER_REQUIRED int(10) NOT NULL DEFAULT '0'
+ online: STATUS_EXPECTED int(3) NOT NULL DEFAULT '0'
+ online: LOG text
 EOD;
   parent::dbInstall($data);
-setGlobal('cycle_online2AutoRestart','1');	 
+setGlobal('cycle_onlineAutoRestart','1');	 
 	 
  }
 // --------------------------------------------------------------------
